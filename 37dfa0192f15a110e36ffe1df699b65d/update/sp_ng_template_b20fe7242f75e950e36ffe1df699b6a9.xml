@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_ng_template">
+    <sp_ng_template action="INSERT_OR_UPDATE">
+        <id>moduleModal</id>
+        <sp_widget display_value="App Menu Generator">7562f81d2f15a110e36ffe1df699b687</sp_widget>
+        <sys_class_name>sp_ng_template</sys_class_name>
+        <sys_created_by>lauri.alakulppi</sys_created_by>
+        <sys_created_on>2023-03-22 18:36:51</sys_created_on>
+        <sys_id>b20fe7242f75e950e36ffe1df699b6a9</sys_id>
+        <sys_mod_count>71</sys_mod_count>
+        <sys_name>moduleModal</sys_name>
+        <sys_package display_value="App Menu Generator" source="x_110515_app_menu">37dfa0192f15a110e36ffe1df699b65d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="App Menu Generator">37dfa0192f15a110e36ffe1df699b65d</sys_scope>
+        <sys_update_name>sp_ng_template_b20fe7242f75e950e36ffe1df699b6a9</sys_update_name>
+        <sys_updated_by>lauri.alakulppi</sys_updated_by>
+        <sys_updated_on>2023-03-30 17:05:14</sys_updated_on>
+        <template><![CDATA[<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      Module <span><i class="fa fa-info-circle" ng-click="c.showText()"></i></span>
+    </h4>
+
+    <pre type="text" id="info" style="display: none;" >
+Title:                              Title of the link
+Order:                              Determines the order of the links
+Link Type:                          Type of the link: NEW, LIST, DETAIL, DIRECT, SEPARATOR
+Table:                              If LIST or DETAIL then mandatory. 
+Filter:                             filter for LIST and DETAIL table queries
+Arguments:                          Arguments passed via url. Eg. &sysparm_view_forced=true
+View:                               View that is used.
+Override Application Menu Roles:    if true, then the sys_app_application level role requirement is not reviewed
+Roles:                              Required roles for that link to be displayed
+
+        </pre>
+
+    <button class=" btn btn-danger pull-right" ng-click="c.removeModule(ctrl.index)">${Delete module}
+    </button>
+    <div class="panel-body wrapper-xl">
+
+      <div>
+        <form class="form-horizontal">
+          <!--TITLE-->
+          <div class="form-group">
+            <label>
+
+              Title
+            </label>
+            <input type="text" class="form-control" placeholder="" ng-model="modules[ctrl.index].title">
+          </div>
+
+          <!--ORDER-->
+          <div class="form-group">
+            <label>
+              Order
+            </label>
+            <input type="number" class="form-control" ng-model="modules[ctrl.index].order">
+          </div>
+
+
+          <!--LINK TYPE-->
+          <div class="form-group">
+            <label>
+              Link type
+            </label>
+
+            <select id="linkType" ng-model='modules[ctrl.index].link_type'
+                    ng-model-options="{getterSetter:true}" name="selectbasic" class="form-control">
+              <option value="DIRECT">DIRECT</option>
+              <option value="DETAIL">DETAIL</option>
+              <option value="NEW">NEW</option>
+              <option value="LIST">LIST</option>
+              <option value="SEPARATOR">SEPARATOR</option>
+
+            </select>
+          </div>
+
+
+
+          <!--TABLE-->
+          <div class="form-group">
+            <label>
+              Table
+            </label>
+            <input type="text" class="form-control" placeholder="" ng-model="modules[ctrl.index].table">
+          </div>
+
+
+          <!--TABLE-->
+          <div class="form-group">
+            <label>
+              Filter
+            </label>
+            <input type="text" class="form-control" placeholder="" ng-model="modules[ctrl.index].filter">
+          </div>
+
+
+          <!--ARGS-->
+          <div class="form-group">
+            <label>
+              Arguments
+            </label>
+            <input type="text" class="form-control" placeholder="" ng-model="modules[ctrl.index].arguments">
+          </div>
+
+
+          <!--VIEW-->
+          <div class="form-group">
+            <label>
+              View
+            </label>
+            <input type="text" class="form-control" placeholder="" ng-model="modules[ctrl.index].view">
+          </div>
+
+          <!--OVERRIDEAPPLICATIONMENUROLES-->
+          <div class="form-group">
+            <label>
+              Override Application Menu Roles
+            </label>
+            <input id="overrideApplicationMenuRoles"
+                   ng-model='modules[ctrl.index].overrideApplicationMenuRoles'
+                   ng-model-options="{getterSetter:true}" type="checkbox" placeholder=""
+                   class="form-check-input">
+
+          </div>
+
+          <!--ROLES-->
+          <div class="form-group role-list">
+            <label>
+              Roles
+            </label>
+            <div class="list-group" ng-repeat="roleRow in modules[ctrl.index].roles track by $index" tr>
+              <div class="list-group-item">
+                {{roleRow}}
+
+                <span>
+                  <div class="btn btn-danger pull-right" style="margin-top: -8px;"  ng-click='c.removeAppRole($index,ctrl.index)'>
+                    <i class="fa fa-close">
+                    </i>
+                  </div>
+                </span>
+
+              </div>
+            </div>
+            <input id="role-input" type="text" class="form-control" ng-model="role">
+            <span>
+              <button class="btn btn-primary" ng-click="c.addAppRole(role,ctrl.index)">${Add} </button>
+            </span>
+
+          </div>
+        </form>
+
+      </div>
+      <button class="btn btn-primary" ng-click="c.closeAppModuleModal()">${Close Modal}
+      </button>
+    </div>
+  </div>
+</div>]]></template>
+    </sp_ng_template>
+</record_update>

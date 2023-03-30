@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_110515_app_menu.AppMenuUtils</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>AppMenuUtils</name>
+        <script><![CDATA[var AppMenuUtils = Class.create();
+AppMenuUtils.prototype = {
+    initialize: function () {
+
+    },
+
+    _insertAppMenu: function (title, category, roles, hint, description, order) {
+        try {
+            var gr = new GlideRecord('sys_app_application');
+            gr.initialize();
+            gr.title = title + "";
+            gr.sys_name = title + "";
+            gr.roles = roles + "";
+            gr.category = category + "";
+            gr.hint = hint + "";
+            gr.description = description + "";
+            gr.order = order + "";
+            var sys_id = gr.insert();
+            if (sys_id) {
+                gs.info("\n\nURL TO INSERTED RECORD:\n" + gs.getProperty('glide.servlet.uri') + gs.generateURL("sys_app_application", sys_id, "") + "\n\n");
+                return sys_id;
+
+            } else {
+                throw new Error('INSERT RECORD FAILED');
+            }
+        } catch (error) {
+            gs.info(error)
+        }
+    },
+
+    _createModuleLinks: function (template) {
+        try {
+            for (var i = 0; i < template.modules.length; i++) {
+                var module = template.modules[i];
+                var createdModule = createModule(module, app);
+                if (!createdModule) {
+                    throw new Error('MODULE CREATION FAILED, EXITING');
+                }
+            }
+            gs.info("MODULES CREATED")
+        } catch (error) {
+            gs.info(error);
+        }
+    },
+
+    _createModule: function (module, app) {
+
+        var gr = new GlideRecord('sys_app_module');
+        gr.initialize();
+        gr.title = module.title + "";
+        gr.order = module.order + "";
+        gr.application = app + "";
+        gr.link_type = module.link_type + "";
+        gr.name = module.table + "";
+        gr.query = module.arguments + "";
+        gr.filter = module.filter + "";
+        gr.roles = module.roles + "";
+        gr.override_menu_roles = module.overrideApplicationMenuRoles + "";
+        gr.view_name = module.view + "";
+        var sys_id = gr.insert();
+        if (!sys_id) {
+            gs.info("ERROR: FAILED TO CREATE: " + module.title)
+            return false;
+        }
+        gs.info("MODULE CREATED: " + module.title)
+        return true;
+
+    },
+
+    type: 'AppMenuUtils'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>lauri.alakulppi</sys_created_by>
+        <sys_created_on>2023-03-21 18:07:10</sys_created_on>
+        <sys_id>ffae1a502f716950e36ffe1df699b6d7</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>AppMenuUtils</sys_name>
+        <sys_package display_value="App Menu Generator" source="x_110515_app_menu">37dfa0192f15a110e36ffe1df699b65d</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="App Menu Generator">37dfa0192f15a110e36ffe1df699b65d</sys_scope>
+        <sys_update_name>sys_script_include_ffae1a502f716950e36ffe1df699b6d7</sys_update_name>
+        <sys_updated_by>lauri.alakulppi</sys_updated_by>
+        <sys_updated_on>2023-03-21 18:14:28</sys_updated_on>
+    </sys_script_include>
+</record_update>

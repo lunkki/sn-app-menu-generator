@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_ng_template">
+    <sp_ng_template action="INSERT_OR_UPDATE">
+        <id>importModal</id>
+        <sp_widget display_value="App Menu Generator">7562f81d2f15a110e36ffe1df699b687</sp_widget>
+        <sys_class_name>sp_ng_template</sys_class_name>
+        <sys_created_by>lauri.alakulppi</sys_created_by>
+        <sys_created_on>2023-03-30 10:03:46</sys_created_on>
+        <sys_id>9c66878b2f352d90e36ffe1df699b6e6</sys_id>
+        <sys_mod_count>13</sys_mod_count>
+        <sys_name>importModal</sys_name>
+        <sys_package display_value="App Menu Generator" source="x_110515_app_menu">37dfa0192f15a110e36ffe1df699b65d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="App Menu Generator">37dfa0192f15a110e36ffe1df699b65d</sys_scope>
+        <sys_update_name>sp_ng_template_9c66878b2f352d90e36ffe1df699b6e6</sys_update_name>
+        <sys_updated_by>lauri.alakulppi</sys_updated_by>
+        <sys_updated_on>2023-03-30 17:05:14</sys_updated_on>
+        <template><![CDATA[<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      Import JSON
+    </h4>
+    <div class="panel-body wrapper-xl">
+      <div class="form-group">
+        <label for="importJSON">Import JSON</label>
+        <textarea ng-modal="import.JSON" class="form-control" id="importJSON" rows="6"></textarea>
+      </div>
+          <button class="btn btn-primary" ng-click="c.execImport(import.JSON)">${Import}
+    </button>
+    </div>
+    <button class="btn btn-primary" ng-click="c.closeImportModal()">${Close Modal}
+    </button>
+  </div>
+</div>]]></template>
+    </sp_ng_template>
+</record_update>

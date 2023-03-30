@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_portal">
+    <sp_portal action="INSERT_OR_UPDATE">
+        <css_variables>$background-secondary:   #f6f6f8</css_variables>
+        <default>false</default>
+        <enable_ais>false</enable_ais>
+        <enable_favorites>false</enable_favorites>
+        <hide_portal_name>false</hide_portal_name>
+        <homepage display_value="app_menu_generator">34517c992f15a110e36ffe1df699b6e6</homepage>
+        <icon/>
+        <kb_knowledge_base/>
+        <kb_knowledge_page/>
+        <login_page/>
+        <logo/>
+        <notfound_page/>
+        <quick_start_config/>
+        <sc_catalog/>
+        <sc_catalog_page/>
+        <sc_category_page/>
+        <search_application/>
+        <search_results_configuration/>
+        <sp_chat_queue/>
+        <sp_rectangle_menu/>
+        <sqanda_knowledge_base/>
+        <sys_class_name>sp_portal</sys_class_name>
+        <sys_created_by>lauri.alakulppi</sys_created_by>
+        <sys_created_on>2023-03-28 08:08:36</sys_created_on>
+        <sys_id>6cc854a62fb9e590e36ffe1df699b636</sys_id>
+        <sys_mod_count>21</sys_mod_count>
+        <sys_name>appgen</sys_name>
+        <sys_package display_value="App Menu Generator" source="x_110515_app_menu">37dfa0192f15a110e36ffe1df699b65d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="App Menu Generator">37dfa0192f15a110e36ffe1df699b65d</sys_scope>
+        <sys_update_name>sp_portal_6cc854a62fb9e590e36ffe1df699b636</sys_update_name>
+        <sys_updated_by>lauri.alakulppi</sys_updated_by>
+        <sys_updated_on>2023-03-30 17:03:46</sys_updated_on>
+        <theme display_value="Workspace EC Theme">d0c8540553033010c11addeeff7b1255</theme>
+        <title>appgen</title>
+        <ts_index_group/>
+        <url_suffix>appgen</url_suffix>
+        <user_registration_config/>
+    </sp_portal>
+    <sys_translated_text action="delete_multiple" query="documentkey=6cc854a62fb9e590e36ffe1df699b636"/>
+</record_update>
