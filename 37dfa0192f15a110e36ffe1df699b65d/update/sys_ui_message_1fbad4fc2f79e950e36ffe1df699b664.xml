@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_message">
+    <sys_ui_message action="INSERT_OR_UPDATE">
+        <application/>
+        <code/>
+        <commented_message/>
+        <key>app_menu_generator</key>
+        <language>en</language>
+        <message>/*
+appMenu:         
+    title:          Application Menu Title
+    category:       Application Menu Category eg. Integration/Custom Application/Administration
+    roles:          Passed in as an array eg. ["admin","itil"]
+    hint:           Defines the text that appears in a tooltip when a user points to a link to this application
+    description:    Provide a more detailed explanation of what this application does
+    order:          Determines the order of the links
+
+module:
+    title:                          Title of the module
+    order:                          Determines the order of the module
+    link_type:                      Type of the link: NEW, LIST, DETAIL, DIRECT, SEPARATOR
+    table:                          If NEW/LIST/DETAIL then mandatory. 
+    roles:                          Passed in as an array eg. ["admin","itil"]
+    overrideApplicationMenuRoles:   if true, then the sys_app_application level role requirement is not reviewed
+    filter:                         filter for LIST and DETAIL table queries
+    arguments:                      Arguments passed via url. Eg. &amp;sysparm_view_forced=true
+    view:                           View that will be used
+
+
+Module link types:
+LIST        Displays the list view for the table you select in the Table field. Use the Filter field to define the default filter for the list. Use the View name field to specify a view.
+DETAIL      Displays a form for a single record on the table. Use the View name field to specify a view.
+DIRECT      Opens any URL, as defined in the Arguments field. External urls can be opened with arguments: 'javascript:window.open("https://google.com");'
+SEPARATOR   Creates a division between modules. Enter a name in the Title field to add a section name that users can collapse or expand.
+*/
+
+
+var template = {{TEMPLATE}}
+
+var appMenuUtils = Class.create();
+appMenuUtils.prototype = {
+
+    /**
+     * @function
+     * @description Initializes the appMenuUtils object.
+     * @param {Object} template - Object containing the appMenu and modules.
+     * @param {boolean} update - Flag to indicate whether to update an existing Application Menu or not.
+     */
+    initialize: function (template, update) {
+        this.template = template;
+        this.update = update; // bool
+        this.gl = new global.GSLog('', 'appGen'); // Logger
+        this.gl.setLevel("info");
+
+    },
+
+    /**
+     * @function
+     * @description Main function for processing appMenu and modules.
+     * @returns {boolean} True if the process succeeds, false otherwise.
+     */
+    process: function () {
+        var gl = this.gl;
+        if (!this._preflightCheck()) {
+            gl.logCrit('❌[ERROR] PREFLIGHT CHECK FAILED. CHECK LOG FOR DETAILS')
+            return false;
+        }
+        if (!this.appMenuGR) {
+            this.appMenuGR = this._createAppMenu();
+        }
+        if (!this.appMenuGR) {
+            gl.logCrit('❌[ERROR] APPLICATION MENU PROCESS FAILED. CHECK LOG FOR DETAILS');
+            return false;
+        }
+
+        if (!this._createModules()) {
+            gl.logCrit('❌[ERROR] ERROR WHILE PROCESSING MODULES. CHECK LOG FOR DETAILS')
+            return false;
+        }
+
+
+        gl.logInfo(' Application Menu And Modules Processed Successfully')
+        return true;
+
+    },
+
+    /**
+     * @function
+     * @description Checks if the appMenu and modules are valid before processing.
+     * @returns {boolean} True if all checks pass, false otherwise.
+     */
+    _preflightCheck: function () {
+
+        try {
+            var appMenu = this.template.appMenu;
+            var modules = this.template.modules;
+            var gl = this.gl;
+            /* VALIDATE APPLICATION MENU REOLES
+             */
+            gl.logInfo('✈️ Application Menu Preflight check started');
+
+
+            if (this.update) {
+                this.appMenuGR = this._lookUpRecord('sys_app_application', 'title=' + appMenu.title);
+                if(!this.appMenuGR) {
+                    throw 'Existing Application Menu not found, disable update for Application Menu';
+                }
+            } 
+            
+           
+
+            if (!this.update) {
+
+                if (!this._validateRoles(appMenu.roles)) {
+                    return false;
+                }
+            }
+
+
+            /* VALIDATE APPLICAITON MENU TITLE
+             */
+            gl.logInfo('Check if Application Menu Exists');
+            if (this._lookUpRecord('sys_app_application', 'title=' + appMenu.title)) {
+                //if update not allowed
+                if (!this.update) {
+                    throw 'sys_app_application ALREADY EXISTS AND UPDATE IS NOT ALLOWED';
+                } else {
+                    gl.logInfo('sys_app_application ALREADY EXISTS AND WE CAN ADD/UPDATE MODULES');
+                    this.appMenuGR = this._lookUpRecord('sys_app_application', 'title=' + appMenu.title);
+                }
+            } else {
+                gl.logInfo('Application Menu Available')
+            }
+
+
+            /* VALIDATE APPLICATION MENU CATEGORY
+             */
+            if (!this.update) {
+                gl.logInfo('Check if Application Menu Category Exists');
+                if (!this._lookUpRecord('sys_app_category', 'name=' + appMenu.category)) {
+                    throw 'sys_app_category: ' + appMenu.category + ' Not found';
+                } else {
+                    gl.logInfo('Application Menu Category Found')
+                }
+            }
+
+            gl.logInfo('✅ Application Menu Checks OK ');
+
+            for (var i = 0; i &lt; modules.length; i++) {
+                var module = modules[i];
+                gl.logInfo('✈️ Module Preflight check started for module :' + module.title + ' [' + module.link_type + ']');
+                /* VALIDATE MODULE ROLES
+                 */
+                if (!this._validateRoles(module.roles)) {
+                    return false;
+                }
+
+                /* VALIDATE TABLE
+                 */
+                if (module.table) {
+                    if (!this._lookUpRecord('sys_db_object', 'name=' + module.table)) {
+                        throw 'Table: ' + module.table + ' Not found';
+                    }
+                }
+
+                /* VALIDATE LINK TYPE
+                 */
+
+                //TABLE MANDATORY
+                if (module.link_type == 'NEW' || module.link_type == 'LIST' || module.link_type == 'DETAIL') {
+                    if (!module.table) {
+                        throw 'TABLE MANDATORY IF LINK TYPE : ' + module.link_type;
+                    }
+                }
+
+                //TABLE MANDATORY
+                if (module.link_type == 'DIRECT') {
+                    if (!module.arguments) {
+                        throw 'ARGUMENTS MANDATORY IF LINK TYPE : ' + module.link_type;
+                    }
+                }
+
+                gl.logInfo('✅ Module Checks OK  ' + module.title + ' [' + module.link_type + ']');
+
+            }
+
+
+            return true;
+        } catch (e) {
+            gl.logCrit('❌ [ERROR] ' + e);
+            return false;
+        }
+    },
+    /**
+     * @function
+     * @description Validates that all roles provided exist in the system.
+     * @param {string[]} roles - the roles to validate
+     * @returns {boolean} - true if all roles exist
+     */
+    _validateRoles: function (roles) {
+        var roleList = [];
+        for (var i = 0; i &lt; roles.length; i++) {
+            var roleName = roles[i];
+            var query = 'name=' + roleName;
+            var gr = new GlideRecord('sys_user_role');
+            gr.addEncodedQuery(query);
+            gr.query();
+            if (!gr.next()) {
+                throw 'ROLE NOT FOUND: ' + roleName;
+            }
+            this.gl.logDebug('Role found: ' + gr.getValue('name'))
+
+        }
+        return true;
+    },
+
+    /** 
+     * @function
+     * @param {string} tableName - the name of the table where to search for
+     * @param {string} query - the query to use when searching for the record
+     * @returns {string} - sys_id of the GlideRecord - null otherwise
+     */
+    _lookUpRecord: function (tableName, query) {
+        var gl = this.gl;
+        var gr = new GlideRecord(tableName);
+        gr.addEncodedQuery(query);
+        gr.query();
+        if (gr.next()) {
+            gl.logInfo('Found Record ' + gr.getDisplayValue() + '[' + tableName + ']');
+            return gr.getUniqueValue();
+        } else {
+            gl.logInfo('Record not found. [query=' + query + '] - ' + '[' + tableName + ']');
+            return null;
+        }
+    },
+
+    /**
+     * @function
+     * @description Creates the application menu record.
+     * @returns {GlideRecord} - the GlideRecord of the application menu that was created
+     */
+    _createAppMenu: function () {
+        try {
+            var appMenu = this.template.appMenu;
+            var gl = this.gl;
+
+            if (this.update &amp;&amp; this.appMenuGR) {
+                return this.appMenuGR;
+            }
+
+            var gr = new GlideRecord('sys_app_application');
+            gr.initialize();
+            gr.title = appMenu.title + "";
+            gr.sys_name = appMenu.title + "";
+            gr.roles = appMenu.roles + "";
+            gr.category = this._lookUpRecord('sys_app_category', 'name=' + appMenu.category);
+            gr.hint = appMenu.hint + "";
+            gr.description = appMenu.description + "";
+            gr.order = appMenu.order + "";
+            var sys_id = gr.insert();
+            if (sys_id) {
+                gl.logInfo('✅ Application Menu Processed Successfully')
+                return sys_id;
+            } else {
+                throw 'Glide Record Insert failed;'
+            }
+        } catch (error) {
+            gl.logCrit("❌ Application Menu Create Failed: " + error)
+        }
+    },
+
+    /**
+     * @function
+     * @description Creates the module records and adds them to the application menu.
+     * @returns {boolean} - true if all modules were created successfully, false if there were any errors
+     */
+    _createModules: function () {
+        try {
+            var gl = this.gl;
+            var modules = this.template.modules
+            var appMenuGR = this.appMenuGR;
+            var result = true;
+            for (var i = 0; i &lt; modules.length; i++) {
+                var module = modules[i];
+                if (!this._createModule(module, appMenuGR)) {
+                    result = false;
+                }
+            }
+            if (result) {
+                gl.logInfo('✅ All Modules Processed Successfully')
+            }
+            return result;
+        } catch (e) {
+            gl.logCrit('❌ [ERROR] ' + e);
+            return false;
+        }
+
+    },
+
+    /**
+     * @function
+     * @description Creates or updates a module record in the sys_app_module table.
+     * @param {Object} module - The module object containing module details.
+     * @param {GlideRecord} appMenuGR - The GlideRecord object representing the application menu.
+     * @returns {boolean} - True if the module was successfully created or updated, false otherwise.
+     */
+    _createModule: function (module, appMenuGR) {
+        try {
+            var gl = this.gl;
+            var existingModule;
+
+            var gr = new GlideRecord('sys_app_module');
+            gr.initialize();
+            if (this.update) {
+                existingModule = this._lookUpRecord('sys_app_module', 'title=' + module.title + '^application=' + appMenuGR);
+                if (existingModule) {
+                    gr.get(existingModule);
+                }
+            }
+            gr.title = module.title + "";
+            gr.order = module.order + "";
+            gr.application = appMenuGR + "";
+            gr.link_type = module.link_type + "";
+            gr.name = module.table + "";
+            gr.query = module.arguments + "";
+            gr.filter = module.filter + "";
+            gr.roles = module.roles + "";
+            gr.override_menu_roles = module.overrideApplicationMenuRoles + "";
+            gr.view_name = module.view + "";
+            if (this.update &amp;&amp; existingModule) {
+                gr.update();
+                gl.logInfo('✅ Module Updated Successfully: ' + module.title + ' [' + module.link_type + ']')
+                return true;
+
+            }
+            var sys_id = gr.insert();
+            if (sys_id) {
+                gl.logInfo('✅ Module Created Successfully: ' + module.title + ' [' + module.link_type + ']')
+                return true;
+            }
+        } catch (error) {
+            gl.logCrit('❌ Module ' + module.title + ' [' + module.link_type + '] ' + ' Processing Failed: ' + error)
+            return false;
+        }
+
+
+    },
+
+
+
+    type: 'appMenuUtils'
+}
+
+
+
+
+
+var u = new appMenuUtils(template,{{allowUpdate}});
+u.process()</message>
+        <sys_class_name>sys_ui_message</sys_class_name>
+        <sys_created_by>lauri.alakulppi</sys_created_by>
+        <sys_created_on>2023-03-22 21:49:22</sys_created_on>
+        <sys_id>1fbad4fc2f79e950e36ffe1df699b664</sys_id>
+        <sys_mod_count>13</sys_mod_count>
+        <sys_name>app_menu_generator</sys_name>
+        <sys_package display_value="App Menu Generator" source="x_110515_app_menu">37dfa0192f15a110e36ffe1df699b65d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="App Menu Generator">37dfa0192f15a110e36ffe1df699b65d</sys_scope>
+        <sys_update_name>sys_ui_message_1fbad4fc2f79e950e36ffe1df699b664</sys_update_name>
+        <sys_updated_by>lauri.alakulppi</sys_updated_by>
+        <sys_updated_on>2023-03-29 18:15:37</sys_updated_on>
+    </sys_ui_message>
+</record_update>

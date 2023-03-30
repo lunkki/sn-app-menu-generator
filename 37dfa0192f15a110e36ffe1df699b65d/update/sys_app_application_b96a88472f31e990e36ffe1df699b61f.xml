@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_app_application">
+    <sys_app_application action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category display_value="Integration">af726f910a0a0b24008b69fe9c311123</category>
+        <description>Necessary links related Integration - Foobar</description>
+        <device_type>browser</device_type>
+        <hint>Application Module for Integration - Foobar</hint>
+        <name/>
+        <order>100</order>
+        <roles>admin</roles>
+        <sys_class_name>sys_app_application</sys_class_name>
+        <sys_created_by>lauri.alakulppi</sys_created_by>
+        <sys_created_on>2023-03-29 20:22:28</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>b96a88472f31e990e36ffe1df699b61f</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Integration - Foobar</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="App Menu Generator" source="x_110515_app_menu">37dfa0192f15a110e36ffe1df699b65d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="App Menu Generator">37dfa0192f15a110e36ffe1df699b65d</sys_scope>
+        <sys_update_name>sys_app_application_b96a88472f31e990e36ffe1df699b61f</sys_update_name>
+        <sys_updated_by>lauri.alakulppi</sys_updated_by>
+        <sys_updated_on>2023-03-29 20:22:28</sys_updated_on>
+        <title>Integration - Foobar</title>
+        <view_name/>
+    </sys_app_application>
+</record_update>

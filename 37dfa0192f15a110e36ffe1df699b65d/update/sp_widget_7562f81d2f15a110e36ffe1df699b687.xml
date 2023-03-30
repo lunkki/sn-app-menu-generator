@@ -1,0 +1,674 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller = function ($scope, $uibModal,spUtil) {
+	/* widget controller */
+	var c = this;
+	$scope.template = c.data.template;
+	$scope.modules = formatModules(c.data.template.modules);
+	$scope.appMenu = c.data.template.appMenu
+	$scope.listEdit = false;
+	$scope.allow = {};
+	$scope.allow.update = false;
+	$scope.role = "";
+	$scope.scriptTemplate = ""
+	$scope.import = {};
+	$scope.import.JSON = "";
+
+	//Remove modules from list
+	c.listToggle = function () {
+		$scope.listEdit	 = !$scope.listEdit;
+	}
+
+	//get template from property
+	c.resetTemplate = function () {
+		c.server.get({
+			'action': 'resetTemplate'
+		})
+			.then(function (res) {
+			$scope.modules = formatModules(res.data.template.modules);
+			$scope.appMenu = res.data.template.appMenu;
+		})
+	}
+
+
+	//create null appmenu + modules
+	c.fromScratch = function () {
+		c.server.get({
+			'action': 'fromScratch'
+		})
+			.then(function (res) {
+			$scope.modules = formatModules(res.data.template.modules);
+			$scope.appMenu = res.data.template.appMenu;
+		})
+	}
+
+
+
+	/*
+	$scope.$on("field.change", function (evt, parms) {
+		if (parms.field.name == 'role') {
+			var roleName = parms.value;
+			if ($scope.appMenu.roles.indexOf(roleName) == -1) {
+				$scope.appMenu.roles.push(roleName);
+			}
+			$scope.role = {
+				name: 'role'
+			}
+		}
+		if (parms.field.name == 'category') {
+			$scope.appMenu.category = parms.displayValue;
+		}
+	});
+*/
+
+	// add appmenu role from dom
+	c.addRole = function (roleName) {
+		if ($scope.appMenu.roles.indexOf(roleName) == -1) {
+			$scope.appMenu.roles.push(roleName);
+		}
+		var roleElem = document.getElementById("role-input");
+		roleElem.value = "";
+	}
+
+
+	// add module role from dom
+	c.addAppRole = function (roleName, moduleIndex) {
+		if ($scope.modules[moduleIndex].roles.indexOf(roleName) == -1) {
+			$scope.modules[moduleIndex].roles.push(roleName);
+		}
+		var roleElem = document.getElementById("role-input");
+		roleElem.value = "";
+	}
+
+	c.removeAppRole = function (index, moduleIndex) {
+		$scope.modules[moduleIndex].roles = removeIndex($scope.modules[moduleIndex].roles, index);
+	}
+
+
+	//module modal - show info
+	c.showText = function () {
+		var info = document.getElementById("info");
+		if (info.style.display == "block") {
+			info.style.display = "none";
+		} else {
+			info.style.display = "block";
+		}
+
+	}
+
+	//copy script to clipboard
+	c.copyScript = function() {
+		var selBox = document.createElement('textarea');
+		selBox.style.position = 'fixed';
+		selBox.style.left = '0';
+		selBox.style.top = '0';
+		selBox.style.opacity = '0';
+		selBox.value = $scope.scriptTemplate;
+		document.body.appendChild(selBox);
+		selBox.focus();
+		selBox.select();
+		document.execCommand('copy');
+		document.body.removeChild(selBox);
+		spUtil.addInfoMessage('Script copied to clipboard. Run it as background script at target instance');
+	}
+
+
+
+	c.exportTemplate = function() {
+		var obj = {};
+		obj.appMenu = $scope.appMenu;
+		obj.modules = $scope.modules;
+		var selBox = document.createElement('textarea');
+		selBox.style.position = 'fixed';
+		selBox.style.left = '0';
+		selBox.style.top = '0';
+		selBox.style.opacity = '0';
+		selBox.value = JSON.stringify(obj,null,4);
+		document.body.appendChild(selBox);
+		selBox.focus();
+		selBox.select();
+		document.execCommand('copy');
+		document.body.removeChild(selBox);
+		spUtil.addInfoMessage('Template copied to clipboard');
+	}
+
+
+
+	// generate and replace variables on server side
+	c.generate = function () {
+
+		var template = {};
+		template.appMenu = $scope.appMenu;
+		template.modules = $scope.modules;
+		var allowUpdate = $scope.allow.update;
+		var variableSubstition = $scope.appMenu.variableSubstition;
+
+		c.server.get({
+			template: JSON.stringify(template),
+			allowUpdate: allowUpdate,
+			action: 'getTemplate',
+			variableSubstition: variableSubstition
+		}).then(function (r) {
+			//cast response back to scope
+			$scope.scriptTemplate = r.data.scriptTemplate;
+
+		});
+	}
+
+	//remove appmenu role
+	c.removeRole = function (index) {
+		$scope.appMenu.roles = removeIndex($scope.appMenu.roles, index);
+	}
+
+	c.removeModule = function (index) {
+
+		$scope.modules = removeIndex($scope.modules, index);
+		$scope.scriptTemplate = ""
+
+		c.appModuleModalInstance.close();
+
+	}
+
+	//remove module from list 
+	c.listRemove = function (index) {
+		$scope.scriptTemplate = ""
+		$scope.modules = removeIndex($scope.modules, index);
+		var obj = {};
+		obj.appMenu = $scope.appMenu;
+		obj.modules = $scope.modules;
+		obj.action = 'save'
+		c.server.get(obj)
+			.then(function (r) {
+		})
+
+	}
+
+	c.removeVariable = function(index) {
+		$scope.appMenu.variableSubstition = removeIndex($scope.appMenu.variableSubstition, index);
+
+		var obj = {};
+		obj.appMenu = $scope.appMenu;
+		obj.modules = $scope.modules;
+		obj.action = 'save'
+		c.server.get(obj)
+			.then(function (r) {
+		})
+	}
+
+	c.addVariable = function(index) {
+		var variable = {
+			"key" : "",
+			"value": ""
+		}
+		$scope.appMenu.variableSubstition.push(variable);
+
+
+		var obj = {};
+		obj.appMenu = $scope.appMenu;
+		obj.modules = $scope.modules;
+		obj.action = 'save'
+		c.server.get(obj)
+			.then(function (r) {
+		})
+	}
+
+	c.execImport = function () {
+		var importElem = document.getElementById("importJSON");
+		$scope.import.JSON = importElem.value;
+		var backup = {};
+		backup.appMenu = $scope.appMenu;
+		backup.modules = $scope.modules;
+		try {
+
+			var importData = JSON.parse($scope.import.JSON);
+			$scope.appMenu = importData.appMenu;
+			$scope.modules = formatModules(importData.modules);
+
+		} catch(e) {
+			$scope.appMenu = backup.appMenu;
+			$scope.modules = backup.modules;
+			spUtil.addErrorMessage('Import JSON not valid');
+		}
+		$scope.import.JSON = "";
+		var obj = {};
+		obj.appMenu = $scope.appMenu;
+		obj.modules = $scope.modules;
+		obj.action = 'save'
+		c.server.get(obj)
+			.then(function (r) {
+		})
+
+
+
+
+	}
+
+
+	c.importTemplate = function () {
+		c.importModalInstance = $uibModal.open({
+			templateUrl: 'importModal',
+			scope: $scope
+		});
+
+	}
+
+
+
+	// open Application menu modal
+	c.editAppMenu = function () {
+		c.appMenuModalInstance = $uibModal.open({
+			templateUrl: 'appMenuModal',
+			scope: $scope
+		});
+
+		c.appMenuModalInstance.closed.then(function () {
+			$scope.modules = formatModules($scope.modules);
+			$scope.scriptTemplate = "" // cast back to null
+			var obj = {};
+			obj.appMenu = $scope.appMenu;
+			obj.modules = $scope.modules;
+			obj.action = 'save'
+			c.server.get(obj)
+				.then(function (r) {
+			})
+		});
+
+	}
+
+	c.editAppModule = function (index) {
+		var moduleIndex = index;
+		c.appModuleModalInstance = $uibModal.open({
+			templateUrl: 'moduleModal',
+			controller: popupController,
+			controllerAs: 'ctrl',
+			scope: $scope,
+			resolve: {
+				item: function () {
+					return moduleIndex;
+				}
+			}
+
+		});
+		c.appModuleModalInstance.closed.then(function () {
+			$scope.modules = formatModules($scope.modules);
+
+			$scope.scriptTemplate = ""
+			var obj = {};
+			obj.appMenu = $scope.appMenu;
+			obj.modules = $scope.modules;
+			obj.action = 'save'
+			c.server.get(obj)
+				.then(function (r) {
+			})
+		});
+	}
+
+	function popupController($scope, $uibModalInstance, item) {
+		var ctrl = this;
+		ctrl.index = item;
+	}
+
+	c.closeAppMenuModal = function () {
+		c.appMenuModalInstance.close();
+	}
+
+	c.closeAppModuleModal = function () {
+		c.appModuleModalInstance.close();
+	}
+
+	c.closeImportModal = function () {
+		c.importModalInstance.close();
+	}
+
+
+	c.formatModuleList = function () {
+		formatModules($scope.modules);
+
+	}
+
+	c.addModule = function () {
+
+		var emptyObj = {
+			title: "PLACEHOLDER",
+			order: 9999,
+			link_type: "DIRECT",
+			table: "",
+			roles: [],
+			overrideApplicationMenuRoles: false,
+			filter: "",
+			arguments: ""
+		}
+
+		$scope.modules.push(emptyObj);
+		formatModules($scope.modules);
+
+		var obj = {};
+		obj.appMenu = $scope.appMenu;
+		obj.modules = $scope.modules;
+		obj.action = 'save'
+		c.server.get(obj)
+			.then(function (r) {
+		})
+	}
+
+
+}
+
+
+
+
+
+
+
+function removeIndex(array, index) {
+	array.splice(index, 1);
+	return array;
+}
+
+function formatModules(modules) {
+	var returnList = [];
+	var parent = "";
+	modules.sort(function (a, b) {
+		return parseFloat(a.order) - parseFloat(b.order);
+	});
+
+
+	for (var i = 0; i < modules.length; i++) {
+		var module = modules[i];
+
+		if (module.link_type == 'SEPARATOR') {
+			module.parent = '';
+			parent = module.title;
+		} else if (parent) {
+			module.parent = parent;
+		} else {
+			module.parent = '';
+		}
+		returnList.push(module);
+	}
+
+
+
+
+	return returnList;
+}]]></client_script>
+        <controller_as>c</controller_as>
+        <css>
+.appmenu {
+    font-size: large;
+}
+
+a {
+  color: black;
+}
+
+a:hover {
+  cursor: pointer;
+}
+
+i:hover {
+  cursor: pointer;
+}
+
+
+.orderspan {
+  font-size: small;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+.app-title {
+ font-weight: bold;
+}
+
+.generateButton {
+  margin-bottom: 20px;
+}
+
+.copyButton {
+
+  padding-bottom: 5px;
+}
+
+#importButton {
+  position: absolute;
+  top: 60px;
+  right: 0;
+
+
+
+}
+
+#exportButton {
+  position: absolute;
+  top: 110px;
+  right: 0;
+
+
+}
+
+hr {
+  margin-top:100px;
+}</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id>app_menu_generator</id>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {  }]]></link>
+        <name>App Menu Generator</name>
+        <option_schema/>
+        <public>true</public>
+        <roles/>
+        <script><![CDATA[(function () {
+	/* populate the 'data' object */
+	/* e.g., data.table = $sp.getValue('table'); */
+	const oobTemplate =  '{ "appMenu": { "hint": "Application Module for Integration - {{Name}}", "roles": ["admin"], "description": "Necessary links related Integration - {{Name}}", "title": "Integration - {{Name}}", "category": "Integration", "order": 100, "variableSubstition": [{ "key": "Name", "value": "Foobar" }, { "key": "table", "value": "u_foobar" }, { "key": "applicationScopeId", "value": "37dfa0192f15a110e36ffe1df699b65d" }, { "key": "dashboardId", "value": "283eeaa0c730030020508b3c5c9763b3" }, { "key": "role", "value": "itil" }, { "key": "docArticle", "value": "KB0000003" } ] }, "modules": [{ "link_type": "DIRECT", "filter": "", "parent": "", "roles": [], "arguments": "$pa_dashboard.do?sysparm_dashboard={{dashboardId}}", "overrideApplicationMenuRoles": false, "title": "Dashboard", "table": "", "order": 5 }, { "link_type": "NEW", "filter": "", "parent": "", "view": "", "roles": ["{{role}}"], "arguments": "", "overrideApplicationMenuRoles": true, "title": "Create New", "table": "{{table}}", "order": 10 }, { "link_type": "LIST", "filter": "sys_created_onONToday@javascript:gs.beginningOfToday()@javascript:gs.endOfToday()", "parent": "", "view": "", "roles": ["{{role}}"], "arguments": "", "overrideApplicationMenuRoles": true, "title": "Created Today", "table": "{{table}}", "order": 20 }, { "link_type": "SEPARATOR", "filter": "", "parent": "", "view": "", "roles": ["admin"], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Configuration", "table": "", "order": 200 }, { "link_type": "DIRECT", "filter": "", "parent": "Configuration", "view": "", "roles": [], "arguments": "system_properties_ui.do?sysparm_title=Properties%20related%20to%20{{Name}}&sysparm_category={{Name}}%20Settings", "overrideApplicationMenuRoles": false, "title": "Settings", "table": "", "order": 210 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Configuration", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Groups", "table": "sys_user_group", "order": 230 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Configuration", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Roles", "table": "sys_user_role", "order": 240 }, { "link_type": "SEPARATOR", "filter": "", "parent": "", "view": "", "roles": ["admin"], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Source Code & Scripts", "table": "", "order": 300 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Source Code & Scripts", "view": "", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Script Includes", "table": "sys_script_include", "order": 310 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Source Code & Scripts", "view": "", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Business Rules", "table": "sys_script", "order": 320 }, { "link_type": "LIST", "filter": "sys_scope={{applicationScopeId}}", "parent": "Source Code & Scripts", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "UI Actions", "table": "sys_ui_action", "order": 330 }, { "link_type": "LIST", "filter": "nameSTATSWITH{{Name}}", "parent": "Source Code & Scripts", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Scheduled Jobs", "table": "sysauto", "order": 340 }, { "link_type": "SEPARATOR", "filter": "", "parent": "", "roles": ["admin"], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Integration Settings", "table": "", "order": 400 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Integration Settings", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "OAuth Application Registry", "table": "oauth_entity", "order": 410 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Integration Settings", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Connection Aliases", "table": "sys_alias", "order": 420 }, { "link_type": "DETAIL", "filter": "user_name=integration.{{Name}}", "parent": "Integration Settings", "view": "", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Integration User", "table": "sys_user", "order": 430 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Integration Settings", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Credentials", "table": "discovery_credentials", "order": 440 }, { "link_type": "SEPARATOR", "filter": "", "parent": "", "roles": ["admin"], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Flow", "table": "", "order": 500 }, { "link_type": "LIST", "filter": "sys_scope={{applicationScopeId}}", "parent": "Flow", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Flows", "table": "sys_hub_flow", "order": 510 }, { "link_type": "LIST", "filter": "sys_scope={{applicationScopeId}}", "parent": "Flow", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Flow Actions", "table": "sys_hub_action_type_definition", "order": 520 }, { "link_type": "LIST", "filter": "sys_created_onONToday@javascript:gs.beginningOfToday()@javascript:gs.endOfToday()^nameSTARTSWITH{{Name}}", "parent": "Flow", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Today\'s Executions", "table": "sys_flow_context", "order": 590 }, { "link_type": "SEPARATOR", "filter": "", "parent": "", "view": "", "roles": ["admin"], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Data Import", "table": "", "order": 700 }, { "link_type": "LIST", "filter": "", "parent": "Data Import", "view": "", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Import Set Rows", "table": "u_imp_{{Name}}", "order": 710 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Data Import", "view": "", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Transform Maps", "table": "sys_transform_map", "order": 720 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Data Import", "view": "", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Data Sources", "table": "sys_data_source", "order": 730 }, { "link_type": "LIST", "filter": "nameSTARTSWITH{{Name}}", "parent": "Data Import", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Scheduled Data Import", "table": "scheduled_import_set", "order": 740 }, { "link_type": "SEPARATOR", "filter": "", "parent": "", "view": "", "roles": ["admin"], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Diagnostics", "table": "", "order": 800 }, { "link_type": "LIST", "filter": "sys_created_onONToday@javascript:gs.beginningOfToday()@javascript:gs.endOfToday()^source=*** Script [{{Name}}]", "parent": "Diagnostics", "view": "", "roles": [], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Script Log", "table": "syslog", "order": 810 }, { "link_type": "SEPARATOR", "filter": "", "parent": "", "view": "", "roles": ["admin"], "arguments": "", "overrideApplicationMenuRoles": false, "title": "Documentation", "table": "", "order": 900 }, { "link_type": "DIRECT", "filter": "", "parent": "Documentation", "roles": [], "arguments": "/kb_view.do?sysparm_article={{docArticle}}", "overrideApplicationMenuRoles": false, "title": "Internal Documentation", "table": "", "order": 910 }, { "link_type": "DIRECT", "filter": "", "parent": "Documentation", "roles": [], "arguments": "javascript:window.open(\'https:\/\/www.google.com\');", "overrideApplicationMenuRoles": false, "title": "External Documentation", "table": "", "order": 920 }] }';
+	const template = gs.getSession().getClientData('app_template') || oobTemplate;
+
+	if (template) {
+		data.template = JSON.parse(template);
+	}
+
+	if (input) {
+		if (input.template) {
+			let message;
+			var gr = new GlideRecord('sys_ui_message');
+			if (gr.get('1fbad4fc2f79e950e36ffe1df699b664')) {
+				let inputTemplateString = input.template + "";
+				let variableSubstition = input.variableSubstition;
+				message = gr.getValue('message');
+				message = message.replace('{{TEMPLATE}}', inputTemplateString);
+				message = message.replace('{{allowUpdate}}', input.allowUpdate);
+				if(variableSubstition) {
+					for (let index = 0; index < variableSubstition.length; index++) {
+						const param = variableSubstition[index];
+						var str = param.key+"";
+
+						//check if there is white space
+						let pattern = /\s/g;
+						let result = str.match(pattern);
+						if(result) {
+							data.scriptTemplate = "";
+							gs.addErrorMessage('White spaces not allowed on variable substitution key.\n Error in key: ' + str);
+							return
+						}
+
+						message = message.replaceAll('{{'+param.key+'}}', param.value);
+					
+					}
+				}
+			}
+			data.scriptTemplate = message;
+		}
+
+		if (input.action == 'resetTemplate') {
+			data.template = JSON.parse(oobTemplate);
+		}
+
+		if(input.action == 'fromScratch') {
+			data.template = {
+				"appMenu": {
+					"hint": "",
+					"roles": [],
+					"description": "",
+					"title": "null",
+					"category": "null",
+					"order": 100,
+					"variableSubstition": [{
+						"key" : "",
+						"value" : ""
+					}]
+				},
+				"modules": []
+			}
+
+		}
+
+		if (input.action == 'save') {
+			var saveTemplate = {};
+			saveTemplate.appMenu = input.appMenu;
+			saveTemplate.modules = input.modules;
+
+			gs.getSession().putClientData('app_template',JSON.stringify(saveTemplate)); 
+		}
+	}
+
+
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>lauri.alakulppi</sys_created_by>
+        <sys_created_on>2023-02-27 16:16:29</sys_created_on>
+        <sys_id>7562f81d2f15a110e36ffe1df699b687</sys_id>
+        <sys_mod_count>665</sys_mod_count>
+        <sys_name>App Menu Generator</sys_name>
+        <sys_package display_value="App Menu Generator" source="x_110515_app_menu">37dfa0192f15a110e36ffe1df699b65d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="App Menu Generator">37dfa0192f15a110e36ffe1df699b65d</sys_scope>
+        <sys_update_name>sp_widget_7562f81d2f15a110e36ffe1df699b687</sys_update_name>
+        <sys_updated_by>lauri.alakulppi</sys_updated_by>
+        <sys_updated_on>2023-03-30 17:08:10</sys_updated_on>
+        <template><![CDATA[<!-- <div class="demoButton">
+  <button type="button" class="btn btn-secondary " ng-click="c.demoModal()"><i
+    class="fa fa-info"> </i> </button>
+</div>
+
+--->
+<div class="main">
+
+  <div class="position-relative">
+         <button id="importButton" type="button" class="btn btn-primary pull-right" ng-click="c.importTemplate()">Import</button>
+        <button id="exportButton"  type="button" class="btn btn-primary pull-right" ng-click="c.exportTemplate()">Export</button>
+
+  </div>
+
+
+  <div>
+    <div class="appmenu">
+      <div class="item-label app-title">
+   
+        <div class="resetButton">
+          <button type="button" class="btn btn-secondary pull-right" ng-click="c.resetTemplate()">Reset template</button>
+        </div>
+
+        <a ng-click="c.editAppMenu()" class="appmenu-title">{{appMenu.title}}
+          <span class="orderspan">
+            [{{appMenu.order}}]
+          </span>
+
+        </a> <span>
+        <button type="button" class="btn btn-secondary btn-sm" ng-click="c.listToggle()"><i
+                                                                                            class="fa fa-edit"> </i> Edit List</button>
+        </span>
+
+      </div>
+
+
+      <ul>
+        <li ng-repeat=" module in modules track by $index">
+          <span ng-if="listEdit"><a ng-click="c.listRemove($index)">❌</a></span>
+          <span ng-if="!module.parent && module.link_type=='SEPARATOR'">
+            <span tabindex="-1" class="chevron-container"><svg class="now-icon chevron" aria-hidden="true"
+                                                               viewBox="0 0 16 16" style="width: 16px; height: 16px;">
+              <g>
+                <path
+                      d="M2.162 5.131a.5.5 0 0 1 .707.031L8 10.76l5.131-5.598a.5.5 0 0 1 .738.676l-5.5 6a.5.5 0 0 1-.738 0l-5.5-6a.5.5 0 0 1 .031-.707z">
+                </path>
+              </g>
+              </svg>
+            </span>
+
+            <a class="modalmenu-title" ng-click='c.editAppModule($index)'>
+              {{module.title}} <span class="orderspan">
+              [{{module.order}}]
+              </span>
+            </a>
+
+          </span>
+          <span ng-if=" !module.parent && module.link_type!='SEPARATOR'"> <a class="modalmenu-title"
+                                                                             ng-click='c.editAppModule($index)'>
+            {{module.title}} <span class="orderspan">
+            [{{module.order}}]
+            </span>
+            </a>
+          </span>
+
+          <span ng-if=" module.parent" style="margin-left: 20px;"> <a class="modalmenu-title"
+                                                                      ng-click='c.editAppModule($index)'>
+            {{module.title}} <span class="orderspan">
+            [{{module.order}}]
+            </span>
+            </a>
+          </span>
+
+        </li>
+      </ul>
+    </div>
+    <button type="button" class="" ng-click="c.addModule()">
+      <i class="fa fa-plus"></i>
+    </button>
+  </div>
+
+
+  <hr class="spacer">
+  <!--ALLOW UPDATE-->
+  <!---
+    <div class="form-check">
+    <input id="allowUpdate"  ng-model='allowUpdate'
+           ng-model-options="{getterSetter:true}" class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+    <label class="form-check-label" for="flexCheckDefault">
+     Allow update (Adds modules to existing Application Menu)
+    </label>
+  </div>
+  -->
+
+
+  <div>
+    <button type="button" class="btn btn-primary generateButton" ng-click="c.generate()">Generate</button>
+    <button type="button" class="btn btn-warning pull-right" ng-click="c.fromScratch()">Create From Scratch</button>
+  </div>
+
+  <div ng-if="scriptTemplate">
+    <div class="copyButton">
+      <button type="button" class="btn btn-outline-primary" ng-click="c.copyScript()">Copy to clipboard</button>
+    </div>
+
+    <pre ng-modal="scriptTemplate">
+  {{scriptTemplate}}
+</pre>
+  </div>
+
+
+</div>]]></template>
+    </sp_widget>
+</record_update>
